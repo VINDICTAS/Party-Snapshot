@@ -10,7 +10,6 @@
 </head>
 <body>
 
-<!-- Starting an immersive WebXR session requires user interaction. -->
 <button onclick="activateXR()">Start Hello WebXR</button>
 <script>
 async function activateXR() {
@@ -22,25 +21,25 @@ async function activateXR() {
 
     const scene = new THREE.Scene();
 
-    // The cube will have a different color on each side.
+    // The cube will have a different color on each side and wireframe mode enabled.
     const materials = [
-      new THREE.MeshBasicMaterial({color: 0xff0000}),
-      new THREE.MeshBasicMaterial({color: 0x0000ff}),
-      new THREE.MeshBasicMaterial({color: 0x00ff00}),
-      new THREE.MeshBasicMaterial({color: 0xff00ff}),
-      new THREE.MeshBasicMaterial({color: 0x00ffff}),
-      new THREE.MeshBasicMaterial({color: 0xffff00})
+      new THREE.MeshBasicMaterial({color: 0xff0000, wireframe: true}),
+      new THREE.MeshBasicMaterial({color: 0x0000ff, wireframe: true}),
+      new THREE.MeshBasicMaterial({color: 0x00ff00, wireframe: true}),
+      new THREE.MeshBasicMaterial({color: 0xff00ff, wireframe: true}),
+      new THREE.MeshBasicMaterial({color: 0x00ffff, wireframe: true}),
+      new THREE.MeshBasicMaterial({color: 0xffff00, wireframe: true})
     ];
 
-    // Create the cube and add it to the demo scene.
-    const cube = new THREE.Mesh(new THREE.BoxBufferGeometry(0.2, 0.2, 0.2), materials);
-    cube.position.set(1, 1, 1);
+    // Create a larger cube and position it 1 meter in front of the camera.
+    const cube = new THREE.Mesh(new THREE.BoxBufferGeometry(0.5, 0.5, 0.5), materials);
+    cube.position.set(0, 0, -1); // Adjust position
     scene.add(cube);
 
     // Set up the WebGLRenderer, which handles rendering to the session's base layer.
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
-      preserveDrawingBuffer: false, // Changed to false
+      preserveDrawingBuffer: false,
       canvas: canvas,
       context: gl
     });
@@ -62,22 +61,18 @@ async function activateXR() {
 
     // Create a render loop that allows us to draw on the AR view.
     const onXRFrame = (time, frame) => {
-      // Queue up the next draw request.
       session.requestAnimationFrame(onXRFrame);
 
       // Bind the graphics framebuffer to the baseLayer's framebuffer
       gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer)
 
-      // Retrieve the pose of the device.
       const pose = frame.getViewerPose(referenceSpace);
       if (pose) {
-        // In mobile AR, we only have one view.
         const view = pose.views[0];
 
         const viewport = session.renderState.baseLayer.getViewport(view);
         renderer.setSize(viewport.width, viewport.height);
 
-        // Use the view's transform matrix and projection matrix to configure the THREE.camera.
         camera.matrix.fromArray(view.transform.matrix);
         camera.projectionMatrix.fromArray(view.projectionMatrix);
         camera.updateMatrixWorld(true);
