@@ -71,11 +71,7 @@ session.updateRenderState({
   baseLayer: new XRWebGLLayer(session, gl)
 });
 
-// A 'local' reference space has a native origin that is located
-// near the viewer's position at the time the session was created.
-const referenceSpace = await session.requestReferenceSpace('local');
-
-// Create a render loop that allows us to draw on the AR view.
+  // Create a render loop that allows us to draw on the AR view.
 const onXRFrame = (time, frame) => {
   // Queue up the next draw request.
   session.requestAnimationFrame(onXRFrame);
