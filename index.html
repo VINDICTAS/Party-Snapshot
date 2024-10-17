@@ -7,22 +7,21 @@
   <title>Hello WebXR!</title>
 
   <!-- three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
+  <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
 </head>
-
 <body>
 
 <!-- Starting an immersive WebXR session requires user interaction.
     We start this one with a simple button. -->
 <button onclick="activateXR()">Start Hello WebXR</button>
 <script>
-
 async function activateXR() {
   // Add a canvas element and initialize a WebGL context that is compatible with WebXR.
   const canvas = document.createElement("canvas");
   document.body.appendChild(canvas);
   const gl = canvas.getContext("webgl", {xrCompatible: true});
+
+  // To be continued in upcoming steps.
 
 const scene = new THREE.Scene();
 
@@ -66,6 +65,16 @@ session.updateRenderState({
 // near the viewer's position at the time the session was created.
 const referenceSpace = await session.requestReferenceSpace('local');
 
+// Initialize a WebXR session using "immersive-ar".
+const session = await navigator.xr.requestSession("immersive-ar");
+session.updateRenderState({
+  baseLayer: new XRWebGLLayer(session, gl)
+});
+
+// A 'local' reference space has a native origin that is located
+// near the viewer's position at the time the session was created.
+const referenceSpace = await session.requestReferenceSpace('local');
+
 // Create a render loop that allows us to draw on the AR view.
 const onXRFrame = (time, frame) => {
   // Queue up the next draw request.
@@ -94,8 +103,6 @@ const onXRFrame = (time, frame) => {
   }
 }
 session.requestAnimationFrame(onXRFrame);
-
-  // To be continued in upcoming steps.
 }
 </script>
 </body>
