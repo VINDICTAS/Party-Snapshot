@@ -21,6 +21,14 @@ async function activateXR() {
 
     const scene = new THREE.Scene();
 
+    // Add lighting to illuminate the model
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2); // Bright light for the scene
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(1, 1, 1).normalize();
+    scene.add(directionalLight);
+
     // Load the GLTF model with the correct raw URL
     const loader = new THREE.GLTFLoader();
     const modelUrl = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/PolygonTest.glb';
@@ -31,8 +39,8 @@ async function activateXR() {
       // Adjust the size of the model
       model.scale.set(0.5, 0.5, 0.5); // Adjust as needed
 
-      // Position the model 1 meter in front of the camera
-      model.position.set(0, 0, -1);
+      // Lower the model's position (Y axis)
+      model.position.set(0, -0.5, -1);  // Lower the model by 0.5 meters
 
       // Add the model to the scene
       scene.add(model);
