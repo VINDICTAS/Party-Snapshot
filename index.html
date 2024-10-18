@@ -45,21 +45,6 @@ async function activateXR() {
       console.error('An error occurred while loading the first model:', error);
     });
 
-    // Load the second GLTF model
-    const modelUrl2 = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Test_3.glb';
-    loader.load(modelUrl2, (gltf) => {
-      const model2 = gltf.scene;
-
-      // Adjust the size and position of the second model
-      model2.scale.set(0.08, 0.08, 0.08); 
-      model2.position.set(1, -1, -3);  // Position the model slightly to the right
-
-      // Add the second model to the scene
-      scene.add(model2);
-    }, undefined, (error) => {
-      console.error('An error occurred while loading the second model:', error);
-    });
-
     // Set up the renderer
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
