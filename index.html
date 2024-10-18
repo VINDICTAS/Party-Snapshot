@@ -32,6 +32,8 @@ async function activateXR() {
     // Load the GLTF model with the correct raw URL
     const loader = new THREE.GLTFLoader();
     const modelUrl = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/PolygonTest.glb';
+    const modelUrl = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Test_2.glb';
+
 
     loader.load(modelUrl, (gltf) => {
       const model = gltf.scene;
