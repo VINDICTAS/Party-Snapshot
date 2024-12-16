@@ -36,13 +36,20 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
       scene.add(ambientLight);
 
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-      directionalLight.position.set(1, 1, 1).normalize();
+      // Increase the intensity of the directional light
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0); // 1.0 intensity
+      directionalLight.position.set(1, 2, 1).normalize();
       scene.add(directionalLight);
+
+      // Optionally, add a second light to ensure uniform illumination
+      const additionalLight = new THREE.PointLight(0xffffff, 1.5); // Higher intensity
+      additionalLight.position.set(0, 2, -2);
+      scene.add(additionalLight);
+
 
       // Load the GLTF model
       const loader = new THREE.GLTFLoader();
-      const modelUrl = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Base2.glb';
+      const modelUrl = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Base3.glb';
       let mixer; // Declare the mixer for animations
       loader.load(modelUrl, (gltf) => {
         const model = gltf.scene;
@@ -63,18 +70,19 @@
         console.error('An error occurred while loading the model:', error);
       });    
         gltf.scene.traverse((child) => {
-          if (child.isMesh) {
-        // Ensure the material is opaque
-              child.material.transparent = false;
-              child.material.opacity = 1.0;
+            if (child.isMesh) {
+                // Ensure the material is opaque
+                child.material.transparent = false;
+                child.material.opacity = 1.0;
+        
+                // Optional: Update render order if transparency issues persist
+                child.renderOrder = 1;
+        
+                // Force materials to update
+                child.material.needsUpdate = true;
+            }
+        });
 
-          // Optional: Update render order if transparency issues persist
-         child.renderOrder = 1;
-
-          // Force materials to update
-          child.material.needsUpdate = true;
-         }
-      });
 
       // Set up the renderer
       const renderer = new THREE.WebGLRenderer({
