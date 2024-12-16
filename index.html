@@ -28,7 +28,12 @@
     try {
       const canvas = document.createElement("canvas");
       document.body.appendChild(canvas);
-      const gl = canvas.getContext("webgl", {xrCompatible: true});
+      const gl = canvas.getContext("webgl2", {xrCompatible: true}); // Request WebGL 2.0 context
+
+      if (!gl) {
+        console.error("WebGL 2.0 is not supported on this device.");
+        return;
+      }
 
       const scene = new THREE.Scene();
 
@@ -59,7 +64,7 @@
           model.position.set(0, -1, -1); // Adjust the position as needed
           scene.add(model);
 
-          // Fix material transparency (moved inside the callback)
+          // Fix material transparency
           gltf.scene.traverse((child) => {
             if (child.isMesh) {
               // Ensure the material is opaque
