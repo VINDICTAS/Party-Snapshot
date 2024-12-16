@@ -36,60 +36,63 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
       scene.add(ambientLight);
 
-      // Increase the intensity of the directional light
       const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0); // 1.0 intensity
       directionalLight.position.set(1, 2, 1).normalize();
       scene.add(directionalLight);
 
-      // Optionally, add a second light to ensure uniform illumination
       const additionalLight = new THREE.PointLight(0xffffff, 1.5); // Higher intensity
       additionalLight.position.set(0, 2, -2);
       scene.add(additionalLight);
-
 
       // Load the GLTF model
       const loader = new THREE.GLTFLoader();
       const modelUrl = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Base3.glb';
       let mixer; // Declare the mixer for animations
-      loader.load(modelUrl, (gltf) => {
-        const model = gltf.scene;
 
-        // Adjust the size and position of the model
-        model.scale.set(0.3, 0.3, 0.3);
-        model.position.set(0, -1, -1); // Adjust the position as needed
-        scene.add(model);
-        
+      loader.load(
+        modelUrl,
+        (gltf) => {
+          const model = gltf.scene;
 
-        // Check if the model has animations
-        if (gltf.animations && gltf.animations.length > 0) {
-          mixer = new THREE.AnimationMixer(model);
-          const action = mixer.clipAction(gltf.animations[0]);
-          action.play();
-        }
-      }, undefined, (error) => {
-        console.error('An error occurred while loading the model:', error);
-      });    
-        gltf.scene.traverse((child) => {
+          // Adjust the size and position of the model
+          model.scale.set(0.3, 0.3, 0.3);
+          model.position.set(0, -1, -1); // Adjust the position as needed
+          scene.add(model);
+
+          // Fix material transparency
+          gltf.scene.traverse((child) => {
             if (child.isMesh) {
-                // Ensure the material is opaque
-                child.material.transparent = false;
-                child.material.opacity = 1.0;
-        
-                // Optional: Update render order if transparency issues persist
-                child.renderOrder = 1;
-        
-                // Force materials to update
-                child.material.needsUpdate = true;
-            }
-        });
+              // Ensure the material is opaque
+              child.material.transparent = false;
+              child.material.opacity = 1.0;
 
+              // Optional: Update render order if transparency issues persist
+              child.renderOrder = 1;
+
+              // Force materials to update
+              child.material.needsUpdate = true;
+            }
+          });
+
+          // Check if the model has animations
+          if (gltf.animations && gltf.animations.length > 0) {
+            mixer = new THREE.AnimationMixer(model);
+            const action = mixer.clipAction(gltf.animations[0]);
+            action.play();
+          }
+        },
+        undefined,
+        (error) => {
+          console.error('An error occurred while loading the model:', error);
+        }
+      );
 
       // Set up the renderer
       const renderer = new THREE.WebGLRenderer({
         alpha: true,
         preserveDrawingBuffer: false,
         canvas: canvas,
-        context: gl
+        context: gl,
       });
       renderer.autoClear = false;
 
@@ -100,7 +103,7 @@
       // Start the WebXR session
       const session = await navigator.xr.requestSession("immersive-ar");
       session.updateRenderState({
-        baseLayer: new XRWebGLLayer(session, gl)
+        baseLayer: new XRWebGLLayer(session, gl),
       });
 
       // Set up reference space
