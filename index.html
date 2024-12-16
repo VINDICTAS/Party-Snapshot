@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-  <title>WebXR with Two GLTF Models</title>
+  <title>AR Test</title>
 
   <!-- three.js -->
   <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
@@ -31,7 +31,7 @@ async function activateXR() {
 
     // Load the first GLTF model
     const loader = new THREE.GLTFLoader();
-    const modelUrl1 = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/PolygonTest.glb';
+    const modelUrl1 = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Base2.glb';
     loader.load(modelUrl1, (gltf) => {
       const model1 = gltf.scene;
 
@@ -41,6 +41,32 @@ async function activateXR() {
 
       // Add the first model to the scene
       scene.add(model1);
+
+      // Check if the model has animations
+      if (gltf.animations && gltf.animations.length > 0) {
+        // Create an AnimationMixer to play animations
+        const mixer = new THREE.AnimationMixer(model1);
+
+        // Play the first animation (or choose a specific one)
+        const action = mixer.clipAction(gltf.animations[0]);
+        action.play();
+
+        // Update the mixer on every frame
+        const clock = new THREE.Clock();
+
+        function updateMixer() {
+          const delta = clock.getDelta();
+          mixer.update(delta);
+        }
+
+        // Add the mixer update to the render loop
+        const originalOnXRFrame = onXRFrame; // Preserve the original onXRFrame function
+        const newOnXRFrame = (time, frame) => {
+          updateMixer(); // Update animations
+          originalOnXRFrame(time, frame); // Call the original onXRFrame
+        };
+        onXRFrame = newOnXRFrame; // Replace the onXRFrame function
+      }
     }, undefined, (error) => {
       console.error('An error occurred while loading the first model:', error);
     });
@@ -68,7 +94,7 @@ async function activateXR() {
     const referenceSpace = await session.requestReferenceSpace('local');
 
     // Render loop
-    const onXRFrame = (time, frame) => {
+    let onXRFrame = (time, frame) => {
       session.requestAnimationFrame(onXRFrame);
 
       // Bind framebuffer
@@ -95,8 +121,6 @@ async function activateXR() {
     console.error("Failed to start AR session", e);
   }
 }
-
-  
 </script>
 </body>
 </html>
