@@ -26,13 +26,21 @@
 
   async function activateXR() {
     try {
+      // Cleanup previous instances
+      const existingCanvas = document.querySelector("canvas");
+      if (existingCanvas) {
+        existingCanvas.remove();
+      }
+
+      // Reinitialize objects
       const canvas = document.createElement("canvas");
       document.body.appendChild(canvas);
       const gl = canvas.getContext("webgl", {xrCompatible: true});
 
       const scene = new THREE.Scene();
+      let mixer; // For animations
 
-      // Add lighting to illuminate the models
+      // Add lighting
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
       scene.add(ambientLight);
 
@@ -43,19 +51,18 @@
       // Load the GLTF model
       const loader = new THREE.GLTFLoader();
       const modelUrl1 = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Base3.glb';
-      
-      let mixer; // Declare the mixer globally for animation handling
+
       loader.load(
         modelUrl1,
         (gltf) => {
           const model1 = gltf.scene;
 
           // Adjust the size and position of the model
-          model1.scale.set(0.5, 0.5, 0.5);
+          model1.scale.set(0.3, 0.3, 0.3);
           model1.position.set(0, -1.5, -2);
           scene.add(model1);
 
-          // Fix material transparency issues
+          // Fix material transparency
           gltf.scene.traverse((child) => {
             if (child.isMesh) {
               child.material.transparent = false;
@@ -65,29 +72,12 @@
             }
           });
 
-          // Check if the model has animations
+          // Handle animations
           if (gltf.animations && gltf.animations.length > 0) {
             mixer = new THREE.AnimationMixer(model1);
-
-            // Play the first animation
             const action = mixer.clipAction(gltf.animations[0]);
-            action.loop = THREE.LoopRepeat;
             action.reset();
             action.play();
-
-            // Update animations in render loop
-            const clock = new THREE.Clock();
-            const updateAnimations = () => {
-              const delta = clock.getDelta();
-              if (mixer) mixer.update(delta);
-            };
-
-            // Attach the update logic to the onXRFrame loop
-            const originalOnXRFrame = onXRFrame;
-            onXRFrame = (time, frame) => {
-              updateAnimations();
-              originalOnXRFrame(time, frame);
-            };
           }
         },
         undefined,
@@ -118,8 +108,11 @@
       // Set up reference space
       const referenceSpace = await session.requestReferenceSpace('local');
 
+      // Animation clock
+      const clock = new THREE.Clock();
+
       // Render loop
-      let onXRFrame = (time, frame) => {
+      const onXRFrame = (time, frame) => {
         session.requestAnimationFrame(onXRFrame);
 
         // Bind framebuffer
@@ -136,6 +129,10 @@
           camera.matrix.fromArray(view.transform.matrix);
           camera.projectionMatrix.fromArray(view.projectionMatrix);
           camera.updateMatrixWorld(true);
+
+          // Update animations
+          const delta = clock.getDelta();
+          if (mixer) mixer.update(delta);
 
           // Render the scene
           renderer.render(scene, camera);
