@@ -42,46 +42,54 @@
 
       // Function to load models and animations
       async function loadCharacter(modelUrl, position, scale) {
-        const loader = new THREE.GLTFLoader();
-        return new Promise((resolve, reject) => {
-          loader.load(
-            modelUrl,
-            (gltf) => {
-              const model = gltf.scene;
+  const loader = new THREE.GLTFLoader();
+  return new Promise((resolve, reject) => {
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        const model = gltf.scene;
 
-              // Set position and scale
-              model.position.set(...position);
-              model.scale.set(...scale);
-              scene.add(model);
+        // Set position and scale
+        model.position.set(...position);
+        model.scale.set(...scale);
+        scene.add(model);
 
-              // Fix material transparency
-              gltf.scene.traverse((child) => {
-                if (child.isMesh) {
-                  child.material.transparent = false;
-                  child.material.opacity = 1.0;
-                  child.renderOrder = 1;
-                  child.material.needsUpdate = true;
-                }
-              });
-
-              // Handle animations
-              if (gltf.animations && gltf.animations.length > 0) {
-                const mixer = new THREE.AnimationMixer(model);
-                const action = mixer.clipAction(gltf.animations[0]);
-                action.play();
-                mixers.push(mixer); // Add mixer to the array
-              }
-
-              resolve(model);
-            },
-            undefined,
-            (error) => {
-              console.error('An error occurred while loading the model:', error);
-              reject(error);
-            }
-          );
+        // Fix material transparency
+        gltf.scene.traverse((child) => {
+          if (child.isMesh) {
+            child.material.transparent = false;
+            child.material.opacity = 1.0;
+            child.renderOrder = 1;
+            child.material.needsUpdate = true;
+          }
         });
+
+        // Handle animations
+        if (gltf.animations && gltf.animations.length > 0) {
+          const mixer = new THREE.AnimationMixer(model);
+          const action = mixer.clipAction(gltf.animations[0]);
+
+          // Set loop mode and enable smooth transitions
+          action.setLoop(THREE.LoopRepeat); // Ensure it loops
+          action.clampWhenFinished = false; // Prevent abrupt stops
+          action.enable = true;
+          action.fadeIn(0.5); // Smooth start
+          action.play();
+
+          mixers.push(mixer); // Add mixer to the array
+        }
+
+        resolve(model);
+      },
+      undefined,
+      (error) => {
+        console.error('An error occurred while loading the model:', error);
+        reject(error);
       }
+    );
+  });
+}
+
 
       // Load multiple characters
       await loadCharacter('https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Base3.glb', [0, -1.5, -2], [0.4, 0.4, 0.4]);
