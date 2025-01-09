@@ -1,36 +1,38 @@
-
 <!doctype html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-  <title>AR Test</title>
-
-  <!-- three.js -->
+  <title>AR Picture-Taking</title>
   <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
   <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
 
-<button onclick="activateXR()">Start WebXR AR</button>
+<button id="start-button">Start WebXR AR</button>
+<button id="capture-button" style="display: none;">Take Picture</button>
+<div id="preview" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center;">
+  <img id="preview-image" style="max-width: 90%; max-height: 90%;">
+  <button id="close-preview">Close</button>
+</div>
+
 <script>
-  let mixers = []; // Array to store animation mixers for all characters
+  let mixers = [];
   let clock = new THREE.Clock();
+  let renderer, scene, camera;
 
   async function activateXR() {
     try {
-      // Cleanup previous instances
-      const existingCanvas = document.querySelector("canvas");
-      if (existingCanvas) {
-        existingCanvas.remove();
-      }
-
-      // Reinitialize objects
+      // Setup renderer, scene, and camera
       const canvas = document.createElement("canvas");
       document.body.appendChild(canvas);
-      const gl = canvas.getContext("webgl", {xrCompatible: true});
+      const gl = canvas.getContext("webgl", { xrCompatible: true });
+      renderer = new THREE.WebGLRenderer({ alpha: true, canvas: canvas, context: gl });
+      renderer.autoClear = false;
 
-      const scene = new THREE.Scene();
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera();
+      camera.matrixAutoUpdate = false;
 
       // Add lighting
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -40,116 +42,93 @@
       directionalLight.position.set(1, 1, 1).normalize();
       scene.add(directionalLight);
 
-      // Function to load models and animations
-      async function loadCharacter(modelUrl, position, scale) {
-  const loader = new THREE.GLTFLoader();
-  return new Promise((resolve, reject) => {
-    loader.load(
-      modelUrl,
-      (gltf) => {
+      // Load character with animation
+      const loader = new THREE.GLTFLoader();
+      const modelUrl = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Fetard.glb';
+      loader.load(modelUrl, (gltf) => {
         const model = gltf.scene;
-
-        // Set position and scale
-        model.position.set(...position);
-        model.scale.set(...scale);
+        model.scale.set(0.3, 0.3, 0.3);
+        model.position.set(0, -1.5, -2);
         scene.add(model);
 
-        // Fix material transparency
-        gltf.scene.traverse((child) => {
-          if (child.isMesh) {
-            child.material.transparent = false;
-            child.material.opacity = 1.0;
-            child.renderOrder = 1;
-            child.material.needsUpdate = true;
-          }
-        });
-
-        // Handle animations
-        if (gltf.animations && gltf.animations.length > 0) {
+        if (gltf.animations.length > 0) {
           const mixer = new THREE.AnimationMixer(model);
           const action = mixer.clipAction(gltf.animations[0]);
-
-          // Set loop mode and enable smooth transitions
-          action.setLoop(THREE.LoopRepeat); // Ensure it loops
-          action.clampWhenFinished = false; // Prevent abrupt stops
-          action.enable = true;
-          action.fadeIn(0.5); // Smooth start
           action.play();
+          mixers.push(mixer);
 
-          mixers.push(mixer); // Add mixer to the array
+          // Store the mixer and gltf for future animation changes
+          model.userData.mixer = mixer;
+          model.userData.animations = gltf.animations;
         }
-
-        resolve(model);
-      },
-      undefined,
-      (error) => {
-        console.error('An error occurred while loading the model:', error);
-        reject(error);
-      }
-    );
-  });
-}
-
-
-      // Load multiple characters
-      await loadCharacter('https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Base3.glb', [0, -1.5, -2], [0.4, 0.4, 0.4]);
-      await loadCharacter('https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Guitariste.glb', [1, -1.5, -3], [0.4, 0.4, 0.4]);
-
-      // Set up the renderer
-      const renderer = new THREE.WebGLRenderer({
-        alpha: true,
-        preserveDrawingBuffer: false,
-        canvas: canvas,
-        context: gl,
       });
-      renderer.autoClear = false;
 
-      // Create the camera
-      const camera = new THREE.PerspectiveCamera();
-      camera.matrixAutoUpdate = false;
-
-      // Start the WebXR session
+      // Start WebXR session
       const session = await navigator.xr.requestSession("immersive-ar");
-      session.updateRenderState({
-        baseLayer: new XRWebGLLayer(session, gl),
-      });
-
-      // Set up reference space
+      session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
       const referenceSpace = await session.requestReferenceSpace('local');
 
-      // Render loop
-      const onXRFrame = (time, frame) => {
+      let onXRFrame = (time, frame) => {
         session.requestAnimationFrame(onXRFrame);
 
-        // Bind framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
 
-        // Get device pose
         const pose = frame.getViewerPose(referenceSpace);
         if (pose) {
           const view = pose.views[0];
           const viewport = session.renderState.baseLayer.getViewport(view);
           renderer.setSize(viewport.width, viewport.height);
 
-          // Update the camera matrices
           camera.matrix.fromArray(view.transform.matrix);
           camera.projectionMatrix.fromArray(view.projectionMatrix);
           camera.updateMatrixWorld(true);
 
-          // Update animations for all mixers
           const delta = clock.getDelta();
           mixers.forEach((mixer) => mixer.update(delta));
 
-          // Render the scene
           renderer.render(scene, camera);
         }
       };
 
       session.requestAnimationFrame(onXRFrame);
+
+      // Show capture button
+      document.getElementById('capture-button').style.display = 'block';
     } catch (e) {
       console.error("Failed to start AR session", e);
     }
   }
+
+  function takePicture() {
+    // Render to a temporary canvas and get the image
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = renderer.domElement.width;
+    tempCanvas.height = renderer.domElement.height;
+    const tempContext = tempCanvas.getContext('2d');
+    tempContext.drawImage(renderer.domElement, 0, 0);
+
+    // Display the snapshot preview
+    const previewDiv = document.getElementById('preview');
+    const previewImage = document.getElementById('preview-image');
+    previewImage.src = tempCanvas.toDataURL('image/png');
+    previewDiv.style.display = 'flex';
+
+    // Change the animation of the character
+    scene.traverse((child) => {
+      if (child.userData.mixer && child.userData.animations.length > 1) {
+        const mixer = child.userData.mixer;
+        const newAction = mixer.clipAction(child.userData.animations[1]);
+        newAction.reset().play(); // Play the second animation
+      }
+    });
+  }
+
+  // Event listeners
+  document.getElementById('start-button').addEventListener('click', activateXR);
+  document.getElementById('capture-button').addEventListener('click', takePicture);
+  document.getElementById('close-preview').addEventListener('click', () => {
+    document.getElementById('preview').style.display = 'none';
+  });
 </script>
 
 </body>
