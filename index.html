@@ -7,12 +7,35 @@
   <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
   <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
   <style>
+    body, html {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
     canvas {
-      position: absolute;
+      display: block;
+    }
+    #overlay {
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
+      pointer-events: none;
+    }
+    #capture-button {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #ff5722;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      pointer-events: auto;
     }
     #preview {
       display: none;
@@ -34,8 +57,9 @@
 </head>
 <body>
 
-<button id="start-button">Start WebXR AR</button>
-<button id="capture-button" style="display: none;">Take Picture</button>
+<div id="overlay">
+  <button id="capture-button">Take Picture</button>
+</div>
 <div id="preview">
   <img id="preview-image">
   <button id="close-preview">Close</button>
@@ -82,7 +106,6 @@
           action.play();
           mixers.push(mixer);
 
-          // Store the mixer and gltf for future animation changes
           model.userData.mixer = mixer;
           model.userData.animations = gltf.animations;
         }
@@ -116,47 +139,40 @@
       };
 
       session.requestAnimationFrame(onXRFrame);
-
-      // Show capture button
-      document.getElementById('capture-button').style.display = 'block';
     } catch (e) {
       console.error("Failed to start AR session", e);
     }
   }
 
   function takePicture() {
-    // Render the scene explicitly to ensure it's up to date
     renderer.render(scene, camera);
 
-    // Render to a temporary canvas and get the image
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = renderer.domElement.width;
     tempCanvas.height = renderer.domElement.height;
     const tempContext = tempCanvas.getContext('2d');
     tempContext.drawImage(renderer.domElement, 0, 0);
 
-    // Display the snapshot preview
     const previewDiv = document.getElementById('preview');
     const previewImage = document.getElementById('preview-image');
     previewImage.src = tempCanvas.toDataURL('image/png');
     previewDiv.style.display = 'flex';
 
-    // Change the animation of the character
     scene.traverse((child) => {
       if (child.userData.mixer && child.userData.animations.length > 1) {
         const mixer = child.userData.mixer;
         const newAction = mixer.clipAction(child.userData.animations[1]);
-        newAction.reset().play(); // Play the second animation
+        newAction.reset().play();
       }
     });
   }
 
-  // Event listeners
-  document.getElementById('start-button').addEventListener('click', activateXR);
   document.getElementById('capture-button').addEventListener('click', takePicture);
   document.getElementById('close-preview').addEventListener('click', () => {
     document.getElementById('preview').style.display = 'none';
   });
+
+  activateXR();
 </script>
 
 </body>
