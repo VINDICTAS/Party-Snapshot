@@ -6,78 +6,66 @@
   <title>AR Picture-Taking</title>
   <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
   <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
-  <style>
-    /* Styles for the "Take Snapshot" button */
-    #capture-button {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #ff5722;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      z-index: 10; /* Ensure the button is above the AR session */
-      display: none; /* Initially hidden */
-    }
-
-    /* Snapshot overlay (hidden by default) */
-    #snapshot {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 10; /* On top of the AR content */
-    }
-
-    #snapshot img {
-      max-width: 80%;
-      max-height: 80%;
-      border-radius: 10px;
-    }
-
-    #snapshot button {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background-color: #f44336;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 14px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-  </style>
+  <link rel="stylesheet" href="ar-ui.css"> <!-- Include the separate CSS file -->
 </head>
 <body>
 
 <button id="start-button">Start WebXR AR</button>
-<button id="capture-button">Take Snapshot</button>
-
-<div id="snapshot">
-  <img id="snapshot-image" src="" alt="Snapshot">
-  <button id="close-snapshot">Close Snapshot</button>
-</div>
 
 <script>
   let mixers = [];
   let clock = new THREE.Clock();
   let renderer, scene, camera;
 
+  // Add the "Take Snapshot" button and Snapshot overlay dynamically to the page
+  const captureButton = document.createElement('button');
+  captureButton.id = 'capture-button';
+  captureButton.innerText = 'Take Snapshot';
+  document.body.appendChild(captureButton);
+
+  const snapshotOverlay = document.createElement('div');
+  snapshotOverlay.id = 'snapshot';
+  document.body.appendChild(snapshotOverlay);
+
+  const snapshotImage = document.createElement('img');
+  snapshotImage.id = 'snapshot-image';
+  snapshotOverlay.appendChild(snapshotImage);
+
+  const closeSnapshotButton = document.createElement('button');
+  closeSnapshotButton.id = 'close-snapshot';
+  closeSnapshotButton.innerText = 'Close Snapshot';
+  snapshotOverlay.appendChild(closeSnapshotButton);
+
+  closeSnapshotButton.addEventListener('click', () => {
+    snapshotOverlay.style.display = 'none';
+  });
+
+  // Function to show the capture button
+  function showCaptureButton() {
+    captureButton.style.display = 'block';
+  }
+
+  // Function to take snapshot
+  function takeSnapshot(renderer, scene, camera) {
+    renderer.render(scene, camera);
+
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = renderer.domElement.width;
+    tempCanvas.height = renderer.domElement.height;
+    const tempContext = tempCanvas.getContext('2d');
+    tempContext.drawImage(renderer.domElement, 0, 0);
+
+    snapshotImage.src = tempCanvas.toDataURL('image/png');
+    snapshotOverlay.style.display = 'flex';
+  }
+
+  // Attach the snapshot functionality to the button
+  captureButton.addEventListener('click', () => {
+    takeSnapshot(renderer, scene, camera);
+  });
+
   async function activateXR() {
     try {
-      // Hide the start button and show the capture button
-      document.getElementById('start-button').style.display = 'none';
-      document.getElementById('capture-button').style.display = 'block';
-
       // Setup renderer, scene, and camera
       const canvas = document.createElement("canvas");
       document.body.appendChild(canvas);
@@ -146,37 +134,17 @@
       };
 
       session.requestAnimationFrame(onXRFrame);
+
+      // Show the "Take Snapshot" button once the AR session starts
+      showCaptureButton(); // Call the function from the JavaScript
+
     } catch (e) {
       console.error("Failed to start AR session", e);
     }
   }
 
-  function takeSnapshot() {
-    // Render the current AR scene to a snapshot canvas
-    renderer.render(scene, camera);
-
-    // Create a temporary canvas and draw the scene onto it
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = renderer.domElement.width;
-    tempCanvas.height = renderer.domElement.height;
-    const tempContext = tempCanvas.getContext('2d');
-    tempContext.drawImage(renderer.domElement, 0, 0);
-
-    // Create an image from the snapshot
-    const snapshotImage = document.getElementById('snapshot-image');
-    snapshotImage.src = tempCanvas.toDataURL('image/png');
-
-    // Show the snapshot in the session (overlay)
-    document.getElementById('snapshot').style.display = 'flex';
-  }
-
   // Attach event listeners
   document.getElementById('start-button').addEventListener('click', activateXR);
-  document.getElementById('capture-button').addEventListener('click', takeSnapshot);
-  document.getElementById('close-snapshot').addEventListener('click', () => {
-    document.getElementById('snapshot').style.display = 'none';
-  });
-
 </script>
 
 </body>
