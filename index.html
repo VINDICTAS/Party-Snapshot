@@ -3,79 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-  <title>AR Picture-Taking</title>
+  <title>AR Test</title>
+
+  <!-- three.js -->
   <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
   <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
-  <link rel="stylesheet" href="ar-ui.css"> <!-- Include the separate CSS file -->
 </head>
 <body>
 
-<button id="start-button">Start WebXR AR</button>
-
+<button onclick="activateXR()">Start WebXR AR</button>
 <script>
-  let mixers = [];
+  let mixers = []; // Array to store animation mixers for all characters
   let clock = new THREE.Clock();
-  let renderer, scene, camera;
-
-  // Add the "Take Snapshot" button and Snapshot overlay dynamically to the page
-  const captureButton = document.createElement('button');
-  captureButton.id = 'capture-button';
-  captureButton.innerText = 'Take Snapshot';
-  document.body.appendChild(captureButton);
-
-  const snapshotOverlay = document.createElement('div');
-  snapshotOverlay.id = 'snapshot';
-  document.body.appendChild(snapshotOverlay);
-
-  const snapshotImage = document.createElement('img');
-  snapshotImage.id = 'snapshot-image';
-  snapshotOverlay.appendChild(snapshotImage);
-
-  const closeSnapshotButton = document.createElement('button');
-  closeSnapshotButton.id = 'close-snapshot';
-  closeSnapshotButton.innerText = 'Close Snapshot';
-  snapshotOverlay.appendChild(closeSnapshotButton);
-
-  closeSnapshotButton.addEventListener('click', () => {
-    snapshotOverlay.style.display = 'none';
-  });
-
-  // Function to show the capture button
-  function showCaptureButton() {
-    captureButton.style.display = 'block';
-  }
-
-  // Function to take snapshot
-  function takeSnapshot(renderer, scene, camera) {
-    renderer.render(scene, camera);
-
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = renderer.domElement.width;
-    tempCanvas.height = renderer.domElement.height;
-    const tempContext = tempCanvas.getContext('2d');
-    tempContext.drawImage(renderer.domElement, 0, 0);
-
-    snapshotImage.src = tempCanvas.toDataURL('image/png');
-    snapshotOverlay.style.display = 'flex';
-  }
-
-  // Attach the snapshot functionality to the button
-  captureButton.addEventListener('click', () => {
-    takeSnapshot(renderer, scene, camera);
-  });
 
   async function activateXR() {
     try {
-      // Setup renderer, scene, and camera
+      // Cleanup previous instances
+      const existingCanvas = document.querySelector("canvas");
+      if (existingCanvas) {
+        existingCanvas.remove();
+      }
+
+      // Reinitialize objects
       const canvas = document.createElement("canvas");
       document.body.appendChild(canvas);
-      const gl = canvas.getContext("webgl", { xrCompatible: true });
-      renderer = new THREE.WebGLRenderer({ alpha: true, canvas: canvas, context: gl, preserveDrawingBuffer: true });
-      renderer.autoClear = false;
+      const gl = canvas.getContext("webgl", {xrCompatible: true});
 
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera();
-      camera.matrixAutoUpdate = false;
+      const scene = new THREE.Scene();
 
       // Add lighting
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -85,66 +39,108 @@
       directionalLight.position.set(1, 1, 1).normalize();
       scene.add(directionalLight);
 
-      // Load character with animation
-      const loader = new THREE.GLTFLoader();
-      const modelUrl = 'https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Fetard.glb';
-      loader.load(modelUrl, (gltf) => {
-        const model = gltf.scene;
-        model.scale.set(0.3, 0.3, 0.3);
-        model.position.set(0, -1.5, -2);
-        scene.add(model);
+      // Function to load models and animations
+      async function loadCharacter(modelUrl, position, scale) {
+        const loader = new THREE.GLTFLoader();
+        return new Promise((resolve, reject) => {
+          loader.load(
+            modelUrl,
+            (gltf) => {
+              const model = gltf.scene;
 
-        if (gltf.animations.length > 0) {
-          const mixer = new THREE.AnimationMixer(model);
-          const action = mixer.clipAction(gltf.animations[0]);
-          action.play();
-          mixers.push(mixer);
+              // Set position and scale
+              model.position.set(...position);
+              model.scale.set(...scale);
+              scene.add(model);
 
-          // Store the mixer and gltf for future animation changes
-          model.userData.mixer = mixer;
-          model.userData.animations = gltf.animations;
-        }
+              // Fix material transparency
+              gltf.scene.traverse((child) => {
+                if (child.isMesh) {
+                  child.material.transparent = false;
+                  child.material.opacity = 1.0;
+                  child.renderOrder = 1;
+                  child.material.needsUpdate = true;
+                }
+              });
+
+              // Handle animations
+              if (gltf.animations && gltf.animations.length > 0) {
+                const mixer = new THREE.AnimationMixer(model);
+                const action = mixer.clipAction(gltf.animations[0]);
+                action.play();
+                mixers.push(mixer); // Add mixer to the array
+              }
+
+              resolve(model);
+            },
+            undefined,
+            (error) => {
+              console.error('An error occurred while loading the model:', error);
+              reject(error);
+            }
+          );
+        });
+      }
+
+      // Load multiple characters
+      await loadCharacter('https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Base3.glb', [0, -1.5, -2], [0.4, 0.4, 0.4]);
+      await loadCharacter('https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Guitarist.glb', [1, -1.5, -3], [0.4, 0.4, 0.4]);
+
+      // Set up the renderer
+      const renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        preserveDrawingBuffer: false,
+        canvas: canvas,
+        context: gl,
+      });
+      renderer.autoClear = false;
+
+      // Create the camera
+      const camera = new THREE.PerspectiveCamera();
+      camera.matrixAutoUpdate = false;
+
+      // Start the WebXR session
+      const session = await navigator.xr.requestSession("immersive-ar");
+      session.updateRenderState({
+        baseLayer: new XRWebGLLayer(session, gl),
       });
 
-      // Start WebXR session
-      const session = await navigator.xr.requestSession("immersive-ar");
-      session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+      // Set up reference space
       const referenceSpace = await session.requestReferenceSpace('local');
 
-      let onXRFrame = (time, frame) => {
+      // Render loop
+      const onXRFrame = (time, frame) => {
         session.requestAnimationFrame(onXRFrame);
 
+        // Bind framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
 
+        // Get device pose
         const pose = frame.getViewerPose(referenceSpace);
         if (pose) {
           const view = pose.views[0];
           const viewport = session.renderState.baseLayer.getViewport(view);
           renderer.setSize(viewport.width, viewport.height);
 
+          // Update the camera matrices
           camera.matrix.fromArray(view.transform.matrix);
           camera.projectionMatrix.fromArray(view.projectionMatrix);
           camera.updateMatrixWorld(true);
 
+          // Update animations for all mixers
           const delta = clock.getDelta();
           mixers.forEach((mixer) => mixer.update(delta));
 
+          // Render the scene
           renderer.render(scene, camera);
         }
       };
 
       session.requestAnimationFrame(onXRFrame);
-
-      // Show the "Take Snapshot" button once the AR session starts
-      showCaptureButton(); // Call the function from the JavaScript
-
     } catch (e) {
       console.error("Failed to start AR session", e);
     }
   }
-
-  // Attach event listeners
-  document.getElementById('start-button').addEventListener('click', activateXR);
 </script>
 
 </body>
