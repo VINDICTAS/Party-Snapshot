@@ -12,17 +12,35 @@
       overflow: hidden;
       font-family: Arial, sans-serif;
     }
+
     canvas {
       display: block;
     }
+
+    #start-button {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
     #overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none; /* Allow WebGL to be interactive but overlay to float above */
+      pointer-events: none; /* Allow WebGL interactions below the overlay */
     }
+
     #capture-button {
       position: fixed;
       bottom: 20px;
@@ -35,9 +53,11 @@
       font-size: 16px;
       border-radius: 5px;
       cursor: pointer;
-      pointer-events: auto; /* Enable interaction with button */
-      z-index: 10;
+      pointer-events: auto; /* Enable interaction with the button */
+      z-index: 10; /* Ensure it's above WebGL */
+      display: none; /* Hidden initially */
     }
+
     #preview {
       display: none;
       position: fixed;
@@ -50,10 +70,12 @@
       align-items: center;
       z-index: 20;
     }
+
     #preview img {
       max-width: 90%;
       max-height: 90%;
     }
+
     #close-preview {
       position: absolute;
       top: 10px;
@@ -70,9 +92,12 @@
 </head>
 <body>
 
+<button id="start-button">Start AR Session</button>
+
 <div id="overlay">
   <button id="capture-button">Take Picture</button>
 </div>
+
 <div id="preview">
   <img id="preview-image">
   <button id="close-preview">Close</button>
@@ -85,6 +110,10 @@
 
   async function activateXR() {
     try {
+      // Hide the start button and show the capture button
+      document.getElementById('start-button').style.display = 'none';
+      document.getElementById('capture-button').style.display = 'block';
+
       // Setup renderer, scene, and camera
       const canvas = document.createElement("canvas");
       document.body.appendChild(canvas);
@@ -180,13 +209,12 @@
     });
   }
 
+  // Attach event listeners
+  document.getElementById('start-button').addEventListener('click', activateXR);
   document.getElementById('capture-button').addEventListener('click', takePicture);
   document.getElementById('close-preview').addEventListener('click', () => {
     document.getElementById('preview').style.display = 'none';
   });
-
-  // Start the session on page load
-  activateXR();
 </script>
 
 </body>
