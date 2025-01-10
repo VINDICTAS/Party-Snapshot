@@ -21,24 +21,10 @@
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none;
-    }
-    #start-button {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      font-size: 18px;
-      border-radius: 5px;
-      cursor: pointer;
-      pointer-events: auto;
+      pointer-events: none; /* Allow WebGL to be interactive but overlay to float above */
     }
     #capture-button {
-      position: absolute;
+      position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
@@ -49,8 +35,8 @@
       font-size: 16px;
       border-radius: 5px;
       cursor: pointer;
-      pointer-events: auto;
-      display: none;
+      pointer-events: auto; /* Enable interaction with button */
+      z-index: 10;
     }
     #preview {
       display: none;
@@ -62,7 +48,7 @@
       background: rgba(0, 0, 0, 0.8);
       justify-content: center;
       align-items: center;
-      z-index: 10;
+      z-index: 20;
     }
     #preview img {
       max-width: 90%;
@@ -85,7 +71,6 @@
 <body>
 
 <div id="overlay">
-  <button id="start-button">Start WebXR AR</button>
   <button id="capture-button">Take Picture</button>
 </div>
 <div id="preview">
@@ -100,10 +85,6 @@
 
   async function activateXR() {
     try {
-      // Hide the start button and show the capture button
-      document.getElementById('start-button').style.display = 'none';
-      document.getElementById('capture-button').style.display = 'block';
-
       // Setup renderer, scene, and camera
       const canvas = document.createElement("canvas");
       document.body.appendChild(canvas);
@@ -199,11 +180,13 @@
     });
   }
 
-  document.getElementById('start-button').addEventListener('click', activateXR);
   document.getElementById('capture-button').addEventListener('click', takePicture);
   document.getElementById('close-preview').addEventListener('click', () => {
     document.getElementById('preview').style.display = 'none';
   });
+
+  // Start the session on page load
+  activateXR();
 </script>
 
 </body>
