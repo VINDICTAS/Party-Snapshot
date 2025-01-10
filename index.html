@@ -23,6 +23,20 @@
       height: 100%;
       pointer-events: none;
     }
+    #start-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      pointer-events: auto;
+    }
     #capture-button {
       position: absolute;
       bottom: 20px;
@@ -36,6 +50,7 @@
       border-radius: 5px;
       cursor: pointer;
       pointer-events: auto;
+      display: none;
     }
     #preview {
       display: none;
@@ -53,11 +68,24 @@
       max-width: 90%;
       max-height: 90%;
     }
+    #close-preview {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 14px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
 <div id="overlay">
+  <button id="start-button">Start WebXR AR</button>
   <button id="capture-button">Take Picture</button>
 </div>
 <div id="preview">
@@ -72,6 +100,10 @@
 
   async function activateXR() {
     try {
+      // Hide the start button and show the capture button
+      document.getElementById('start-button').style.display = 'none';
+      document.getElementById('capture-button').style.display = 'block';
+
       // Setup renderer, scene, and camera
       const canvas = document.createElement("canvas");
       document.body.appendChild(canvas);
@@ -167,12 +199,11 @@
     });
   }
 
+  document.getElementById('start-button').addEventListener('click', activateXR);
   document.getElementById('capture-button').addEventListener('click', takePicture);
   document.getElementById('close-preview').addEventListener('click', () => {
     document.getElementById('preview').style.display = 'none';
   });
-
-  activateXR();
 </script>
 
 </body>
