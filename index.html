@@ -8,41 +8,13 @@
   <!-- three.js -->
   <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
   <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
-  
-  <style>
-    #snapshotButton {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 10px 20px;
-      background-color: rgba(255, 255, 255, 0.8);
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      z-index: 1000;
-    }
-
-    #snapshotPreview {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      width: 200px;
-      height: auto;
-      border: 2px solid #fff;
-      z-index: 1000;
-    }
-  </style>
 </head>
 <body>
 
 <button onclick="activateXR()">Start WebXR AR</button>
-<button id="snapshotButton" style="display: none;" onclick="takeSnapshot()">Take Snapshot</button>
-<img id="snapshotPreview" style="display: none;" />
-
 <script>
   let mixers = []; // Array to store animation mixers for all characters
   let clock = new THREE.Clock();
-  let renderer;
 
   async function activateXR() {
     try {
@@ -115,9 +87,9 @@
       await loadCharacter('https://raw.githubusercontent.com/VINDICTAS/webxr-test/main/Guitariste.glb', [1, -1.5, -3], [0.4, 0.4, 0.4]);
 
       // Set up the renderer
-      renderer = new THREE.WebGLRenderer({
+      const renderer = new THREE.WebGLRenderer({
         alpha: true,
-        preserveDrawingBuffer: true, // Enable preserving the drawing buffer for snapshots
+        preserveDrawingBuffer: false,
         canvas: canvas,
         context: gl,
       });
@@ -135,9 +107,6 @@
 
       // Set up reference space
       const referenceSpace = await session.requestReferenceSpace('local');
-
-      // Show the snapshot button
-      document.getElementById('snapshotButton').style.display = 'block';
 
       // Render loop
       const onXRFrame = (time, frame) => {
@@ -172,15 +141,7 @@
       console.error("Failed to start AR session", e);
     }
   }
-
-  function takeSnapshot() {
-    const canvas = document.querySelector("canvas");
-    const snapshot = canvas.toDataURL("image/png");
-    const snapshotPreview = document.getElementById("snapshotPreview");
-    snapshotPreview.src = snapshot;
-    snapshotPreview.style.display = 'block';
-  }
 </script>
 
 </body>
-</html>
+</html> 
